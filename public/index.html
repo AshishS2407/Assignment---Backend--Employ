@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee List</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .bg-primary { background-color: #4ae25e; }
+        .text-primary { color: #4ae270ec; }
+        .btn { transition: background-color 0.3s; }
+        .btn:hover { background-color: #8be94c9a; }
+    </style>
+</head>
+<body class="bg-gray-100 p-10">
+    <div class=" mx-auto bg-white p-8 rounded-lg shadow-lg">
+        <h1 class="text-3xl font-bold mb-6 text-primary text-center">Employee List</h1>
+        <input type="text" id="newEmployeeName" class="border p-3 w-full mb-2 rounded-lg" placeholder="Enter employee name">
+        <input type="text" id="newEmployeeRole" class="border p-3 w-full mb-4 rounded-lg" placeholder="Enter employee role">
+        <button onclick="createEmployee()" class="bg-primary text-white px-4 py-2 rounded-lg btn ml-[1700px]">Add Employee</button>
+        <ul id="employeesContainer" class="mt-20 list-disc pl-5 space-y-3"></ul>
+    </div>
+    <script>
+        async function createEmployee() {
+            const nameInput = document.getElementById("newEmployeeName");
+            const roleInput = document.getElementById("newEmployeeRole");
+            const name = nameInput.value.trim();
+            const role = roleInput.value.trim();
+            if (name && role) {
+                const response = await fetch('/api/employees', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, role })
+                });
+                if (response.ok) {
+                    const employee = await response.json();
+                    addEmployeeToDOM(employee);
+                    nameInput.value = "";
+                    roleInput.value = "";
+                }
+            }
+        }
+
+        async function loadEmployees() {
+            const response = await fetch('/api/employees');
+            const employees = await response.json();
+            employees.forEach(employee => addEmployeeToDOM(employee));
+        }
+
+        async function editEmployee(id) {
+            const newName = prompt("Update the name:");
+            const newRole = prompt("Update the role:");
+            if (newName && newRole) {
+                const response = await fetch(`/api/employees/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: newName, role: newRole })
+                });
+                if (response.ok) {
+                    const employee = await response.json();
+                    document.getElementById(`employeeName-${id}`).textContent = employee.name;
+                    document.getElementById(`employeeRole-${id}`).textContent = employee.role;
+                }
+            }
+        }
+
+        async function removeEmployee(id) {
+            const response = await fetch(`/api/employees/${id}`, { method: 'DELETE' });
+            if (response.ok) {
+                document.getElementById(`employeeItem-${id}`).remove();
+            }
+        }
+
+        function addEmployeeToDOM(employee) {
+            const employeesContainer = document.getElementById("employeesContainer");
+            const li = document.createElement("li");
+            li.id = `employeeItem-${employee.id}`;
+            li.classList.add("flex", "justify-between", "items-center", "p-3", "bg-gray-50", "rounded-lg", "shadow");
+            li.innerHTML = `
+                <span id="employeeName-${employee.id}" class="text-gray-800">${employee.name}</span>
+                <span id="employeeRole-${employee.id}" class="text-gray-800">${employee.role}</span>
+                <div>
+                    <button onclick="editEmployee(${employee.id})" class="bg-yellow-500 text-white px-3 py-1 rounded-lg mr-2 btn">Edit</button>
+                    <button onclick="removeEmployee(${employee.id})" class="bg-red-500 text-white px-3 py-1 rounded-lg btn">Delete</button>
+                </div>
+            `;
+            employeesContainer.appendChild(li);
+        }
+
+        document.addEventListener("DOMContentLoaded", loadEmployees);
+    </script>
+</body>
+</html>
+
